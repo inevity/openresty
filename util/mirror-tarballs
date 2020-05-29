@@ -28,13 +28,15 @@ fi
 #################################
 
 ver="$main_ver"
-$root/util/get-tarball "https://openresty.org/download/nginx-$ver.tar.gz" -O nginx-$ver.tar.gz || exit 1
+# $root/util/get-tarball "https://openresty.org/download/nginx-$ver.tar.gz" -O nginx-$ver.tar.gz || exit 1
+$root/util/get-tarball "https://nginx.org/download/nginx-$ver.tar.gz" -O nginx-$ver.tar.gz || exit 1
 tar -xzf nginx-$ver.tar.gz || exit 1
 cd nginx-$ver || exit 1
 
-echo "$info_txt applying the nginx-$main_ver-win32_max_err_str.patch"
-patch -p1 < $root/patches/nginx-$main_ver-win32_max_err_str.patch || exit 1
-echo
+#
+#echo "$info_txt applying the nginx-$main_ver-win32_max_err_str.patch"
+#patch -p1 < $root/patches/nginx-$main_ver-win32_max_err_str.patch || exit 1
+#echo
 
 answer=`$root/util/ver-ge "$main_ver" 1.13.3`
 if [ "$answer" = "N" ]; then
@@ -478,6 +480,13 @@ echo "$info_txt applying the reuseport_close_unused_fds patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-reuseport_close_unused_fds.patch || exit 1
 echo
 
+# whethch ssl build need change 
+echo "$info_txt applying the quiche as quic and http3 patch for nginx"
+patch -p1 < $root/patches/nginx-$main_ver-quiche.patch || exit 1
+echo
+
+
+mkdir -p docs/html
 cp $root/html/index.html docs/html/ || exit 1
 cp $root/html/50x.html docs/html/ || exit 1
 

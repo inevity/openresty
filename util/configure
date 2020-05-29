@@ -1473,6 +1473,7 @@ Options directly inherited from nginx
   --with-file-aio                    enable file AIO support
 
   --with-http_v2_module              enable ngx_http_v2_module
+  --with-http_v3_module              enable ngx_http_v3_module
   --with-http_realip_module          enable ngx_http_realip_module
   --with-http_addition_module        enable ngx_http_addition_module
   --with-http_xslt_module            enable ngx_http_xslt_module
@@ -1615,6 +1616,8 @@ Options directly inherited from nginx
 
   --dry-run                          dry running the configure, for testing only
   --platform=PLATFORM                forcibly specify a platform name, for testing only
+  --with-quiche=DIR                  set path to quiche library source
+  --with-quiche                      force quiche library usage
 _EOC_
 
     if ($retval == 0) {
