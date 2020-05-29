@@ -484,6 +484,9 @@ echo
 echo "$info_txt applying the quiche as quic and http3 patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-quiche.patch || exit 1
 echo
+echo "$info_txt applying the quiche ssh header depend patch for nginx"
+patch -p1 < $root/patches/nginx-$main_ver-quiche_sshheader.patch || exit 1
+echo
 
 
 mkdir -p docs/html

@@ -1,0 +1,32 @@
+diff --git a/auto/lib/quiche/make b/auto/lib/quiche/make
+index bd1bec8..12bb025 100644
+--- a/auto/lib/quiche/make
++++ b/auto/lib/quiche/make
+@@ -12,7 +12,19 @@ if [ $NGX_DEBUG = YES ]; then
+ fi
+ 
+ 
+-cat << END                                                    >> $NGX_MAKEFILE
++if [ $OPENSSL = YES ]; then
++
++    cat << END                                                    >> $NGX_MAKEFILE
++
++$QUICHE/target/$QUICHE_BUILD_TARGET/libquiche.a: \\
++		$NGX_MAKEFILE
++	cd $QUICHE && cargo build $QUICHE_BUILD_FLAGS
++
++END
++
++else
++
++    cat << END                                                    >> $NGX_MAKEFILE
+ 
+ $QUICHE/target/$QUICHE_BUILD_TARGET/libquiche.a: \\
+ 		$OPENSSL/.openssl/include/openssl/ssl.h \\
+@@ -20,3 +32,6 @@ $QUICHE/target/$QUICHE_BUILD_TARGET/libquiche.a: \\
+ 	cd $QUICHE && cargo build $QUICHE_BUILD_FLAGS
+ 
+ END
++
++fi
++
