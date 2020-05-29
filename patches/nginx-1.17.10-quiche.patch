@@ -1,11 +1,12 @@
-From efb37c5c76ab31451590374138de8bfbc6429940 Mon Sep 17 00:00:00 2001
-From: Alessandro Ghedini <alessandro@cloudflare.com>
-Date: Thu, 10 Oct 2019 17:06:08 +0100
-Subject: [PATCH] Initial QUIC and HTTP/3 implementation using quiche
+From c6e279f4bd0c01f68910b4c2b95f48720f0c1a97 Mon Sep 17 00:00:00 2001
+From: baul <roidinev@gmail.com>
+Date: Fri, 29 May 2020 13:57:09 +0000
+Subject: [PATCH] nginx-1.17 quiche patch
 
 ---
  auto/lib/conf                           |    4 +
  auto/lib/make                           |    4 +
+ auto/lib/openssl/make                   |   12 +-
  auto/lib/quiche/conf                    |   23 +
  auto/lib/quiche/make                    |   22 +
  auto/make                               |    3 +-
@@ -42,7 +43,7 @@ Subject: [PATCH] Initial QUIC and HTTP/3 implementation using quiche
  create mode 100644 src/http/v3/ngx_http_v3_module.h
 
 diff --git a/auto/lib/conf b/auto/lib/conf
-index 2c7af1040..abf920bae 100644
+index 2c7af104..abf920ba 100644
 --- a/auto/lib/conf
 +++ b/auto/lib/conf
 @@ -25,6 +25,10 @@ if [ $USE_OPENSSL = YES ]; then
@@ -57,7 +58,7 @@ index 2c7af1040..abf920bae 100644
      . auto/lib/zlib/conf
  fi
 diff --git a/auto/lib/make b/auto/lib/make
-index b64e32908..c8f34ae2e 100644
+index b64e3290..c8f34ae2 100644
 --- a/auto/lib/make
 +++ b/auto/lib/make
 @@ -11,6 +11,10 @@ if [ $OPENSSL != NONE -a $OPENSSL != NO -a $OPENSSL != YES ]; then
@@ -71,9 +72,32 @@ index b64e32908..c8f34ae2e 100644
  if [ $ZLIB != NONE -a $ZLIB != NO -a $ZLIB != YES ]; then
      . auto/lib/zlib/make
  fi
+diff --git a/auto/lib/openssl/make b/auto/lib/openssl/make
+index 126a2387..3af2ae55 100644
+--- a/auto/lib/openssl/make
++++ b/auto/lib/openssl/make
+@@ -49,11 +49,13 @@ END
+         cat << END                                            >> $NGX_MAKEFILE
+ 
+ $OPENSSL/.openssl/include/openssl/ssl.h:	$NGX_MAKEFILE
+-	cd $OPENSSL \\
+-	&& if [ -f Makefile ]; then \$(MAKE) clean; fi \\
+-	&& ./config --prefix=$ngx_prefix no-shared no-threads $OPENSSL_OPT \\
+-	&& \$(MAKE) \\
+-	&& \$(MAKE) install_sw LIBDIR=lib
++	mkdir -p $OPENSSL/build $OPENSSL/.openssl/lib $OPENSSL/.openssl/include/openssl \\
++	&& cd $OPENSSL/build \\
++	&& cmake -DCMAKE_C_FLAGS="$OPENSSL_OPT" -DCMAKE_CXX_FLAGS="$OPENSSL_OPT" .. \\
++	&& \$(MAKE) VERBOSE=1 \\
++	&& cd .. \\
++	&& cp -r include/openssl/*.h .openssl/include/openssl \\
++	&& cp build/ssl/libssl.a build/crypto/libcrypto.a .openssl/lib
+ 
+ END
+ 
 diff --git a/auto/lib/quiche/conf b/auto/lib/quiche/conf
 new file mode 100644
-index 000000000..23219d92a
+index 00000000..23219d92
 --- /dev/null
 +++ b/auto/lib/quiche/conf
 @@ -0,0 +1,23 @@
@@ -102,7 +126,7 @@ index 000000000..23219d92a
 +fi
 diff --git a/auto/lib/quiche/make b/auto/lib/quiche/make
 new file mode 100644
-index 000000000..bd1bec8b7
+index 00000000..bd1bec8b
 --- /dev/null
 +++ b/auto/lib/quiche/make
 @@ -0,0 +1,22 @@
@@ -129,7 +153,7 @@ index 000000000..bd1bec8b7
 +
 +END
 diff --git a/auto/make b/auto/make
-index 34c40cdd5..136c0a64e 100644
+index 34c40cdd..136c0a64 100644
 --- a/auto/make
 +++ b/auto/make
 @@ -7,7 +7,8 @@ echo "creating $NGX_MAKEFILE"
@@ -143,10 +167,10 @@ index 34c40cdd5..136c0a64e 100644
           $NGX_OBJS/src/mail \
           $NGX_OBJS/src/stream \
 diff --git a/auto/modules b/auto/modules
-index 09bfcb08d..2b2e6a889 100644
+index d78e2823..c738ca42 100644
 --- a/auto/modules
 +++ b/auto/modules
-@@ -134,6 +134,7 @@ if [ $HTTP = YES ]; then
+@@ -119,6 +119,7 @@ if [ $HTTP = YES ]; then
      #     ngx_http_header_filter
      #     ngx_http_chunked_filter
      #     ngx_http_v2_filter
@@ -154,7 +178,7 @@ index 09bfcb08d..2b2e6a889 100644
      #     ngx_http_range_header_filter
      #     ngx_http_gzip_filter
      #     ngx_http_postpone_filter
-@@ -166,6 +167,7 @@ if [ $HTTP = YES ]; then
+@@ -151,6 +152,7 @@ if [ $HTTP = YES ]; then
                        ngx_http_header_filter_module \
                        ngx_http_chunked_filter_module \
                        ngx_http_v2_filter_module \
@@ -162,7 +186,7 @@ index 09bfcb08d..2b2e6a889 100644
                        ngx_http_range_header_filter_module \
                        ngx_http_gzip_filter_module \
                        ngx_http_postpone_filter_module \
-@@ -227,6 +229,17 @@ if [ $HTTP = YES ]; then
+@@ -212,6 +214,17 @@ if [ $HTTP = YES ]; then
          . auto/module
      fi
  
@@ -180,7 +204,7 @@ index 09bfcb08d..2b2e6a889 100644
      if :; then
          ngx_module_name=ngx_http_range_header_filter_module
          ngx_module_incs=
-@@ -438,6 +451,24 @@ if [ $HTTP = YES ]; then
+@@ -423,6 +436,24 @@ if [ $HTTP = YES ]; then
          . auto/module
      fi
  
@@ -205,7 +229,7 @@ index 09bfcb08d..2b2e6a889 100644
      if :; then
          ngx_module_name=ngx_http_static_module
          ngx_module_incs=
-@@ -1268,6 +1299,19 @@ if [ $USE_OPENSSL = YES ]; then
+@@ -1253,6 +1284,19 @@ if [ $USE_OPENSSL = YES ]; then
  fi
  
  
@@ -226,7 +250,7 @@ index 09bfcb08d..2b2e6a889 100644
      ngx_module_type=CORE
      ngx_module_name=ngx_regex_module
 diff --git a/auto/options b/auto/options
-index d8b421b0f..6b443f048 100644
+index 521c9768..48e8d3fb 100644
 --- a/auto/options
 +++ b/auto/options
 @@ -59,6 +59,7 @@ HTTP_CHARSET=YES
@@ -235,9 +259,9 @@ index d8b421b0f..6b443f048 100644
  HTTP_V2=NO
 +HTTP_V3=NO
  HTTP_SSI=YES
- HTTP_POSTPONE=NO
  HTTP_REALIP=NO
-@@ -148,6 +149,9 @@ PCRE_JIT=NO
+ HTTP_XSLT=NO
+@@ -147,6 +148,9 @@ PCRE_JIT=NO
  USE_OPENSSL=NO
  OPENSSL=NONE
  
@@ -247,7 +271,7 @@ index d8b421b0f..6b443f048 100644
  USE_ZLIB=NO
  ZLIB=NONE
  ZLIB_OPT=
-@@ -225,6 +229,7 @@ $0: warning: the \"--with-ipv6\" option is deprecated"
+@@ -224,6 +228,7 @@ $0: warning: the \"--with-ipv6\" option is deprecated"
  
          --with-http_ssl_module)          HTTP_SSL=YES               ;;
          --with-http_v2_module)           HTTP_V2=YES                ;;
@@ -255,7 +279,7 @@ index d8b421b0f..6b443f048 100644
          --with-http_realip_module)       HTTP_REALIP=YES            ;;
          --with-http_addition_module)     HTTP_ADDITION=YES          ;;
          --with-http_xslt_module)         HTTP_XSLT=YES              ;;
-@@ -358,6 +363,9 @@ use the \"--with-mail_ssl_module\" option instead"
+@@ -357,6 +362,9 @@ use the \"--with-mail_ssl_module\" option instead"
          --with-openssl=*)                OPENSSL="$value"           ;;
          --with-openssl-opt=*)            OPENSSL_OPT="$value"       ;;
  
@@ -265,7 +289,7 @@ index d8b421b0f..6b443f048 100644
          --with-md5=*)
              NGX_POST_CONF_MSG="$NGX_POST_CONF_MSG
  $0: warning: the \"--with-md5\" option is deprecated"
-@@ -440,6 +448,7 @@ cat << END
+@@ -439,6 +447,7 @@ cat << END
  
    --with-http_ssl_module             enable ngx_http_ssl_module
    --with-http_v2_module              enable ngx_http_v2_module
@@ -274,7 +298,7 @@ index d8b421b0f..6b443f048 100644
    --with-http_addition_module        enable ngx_http_addition_module
    --with-http_xslt_module            enable ngx_http_xslt_module
 diff --git a/src/core/ngx_connection.h b/src/core/ngx_connection.h
-index 54059629e..7df8d4136 100644
+index ad6556d0..0af3f2d8 100644
 --- a/src/core/ngx_connection.h
 +++ b/src/core/ngx_connection.h
 @@ -79,6 +79,9 @@ struct ngx_listening_s {
@@ -287,7 +311,7 @@ index 54059629e..7df8d4136 100644
  #if (NGX_HAVE_DEFERRED_ACCEPT && defined SO_ACCEPTFILTER)
      char               *accept_filter;
  #endif
-@@ -156,6 +159,10 @@ struct ngx_connection_s {
+@@ -155,6 +158,10 @@ struct ngx_connection_s {
  
      ngx_udp_connection_t  *udp;
  
@@ -299,10 +323,10 @@ index 54059629e..7df8d4136 100644
      socklen_t           local_socklen;
  
 diff --git a/src/core/ngx_core.h b/src/core/ngx_core.h
-index 93ca9174d..d0441f034 100644
+index 7ecdca0c..28bf71b4 100644
 --- a/src/core/ngx_core.h
 +++ b/src/core/ngx_core.h
-@@ -82,6 +82,9 @@ typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
+@@ -83,6 +83,9 @@ typedef void (*ngx_connection_handler_pt)(ngx_connection_t *c);
  #if (NGX_OPENSSL)
  #include <ngx_event_openssl.h>
  #endif
@@ -314,7 +338,7 @@ index 93ca9174d..d0441f034 100644
  #include <ngx_module.h>
 diff --git a/src/event/ngx_event_quic.c b/src/event/ngx_event_quic.c
 new file mode 100644
-index 000000000..9f8b2cb98
+index 00000000..9f8b2cb9
 --- /dev/null
 +++ b/src/event/ngx_event_quic.c
 @@ -0,0 +1,589 @@
@@ -909,7 +933,7 @@ index 000000000..9f8b2cb98
 +}
 diff --git a/src/event/ngx_event_quic.h b/src/event/ngx_event_quic.h
 new file mode 100644
-index 000000000..b44a96320
+index 00000000..b44a9632
 --- /dev/null
 +++ b/src/event/ngx_event_quic.h
 @@ -0,0 +1,49 @@
@@ -963,7 +987,7 @@ index 000000000..b44a96320
 +
 +#endif /* _NGX_EVENT_QUIC_H_INCLUDED_ */
 diff --git a/src/event/ngx_event_udp.c b/src/event/ngx_event_udp.c
-index 557283050..146275121 100644
+index 55728305..14627512 100644
 --- a/src/event/ngx_event_udp.c
 +++ b/src/event/ngx_event_udp.c
 @@ -276,6 +276,14 @@ ngx_event_recvmsg(ngx_event_t *ev)
@@ -982,7 +1006,7 @@ index 557283050..146275121 100644
                                - ngx_cycle->free_connection_n;
  
 diff --git a/src/http/modules/ngx_http_ssl_module.c b/src/http/modules/ngx_http_ssl_module.c
-index b3f8f4795..00dd9c61a 100644
+index 495e628d..f42cecf5 100644
 --- a/src/http/modules/ngx_http_ssl_module.c
 +++ b/src/http/modules/ngx_http_ssl_module.c
 @@ -371,7 +371,7 @@ ngx_http_ssl_alpn_select(ngx_ssl_conn_t *ssl_conn, const unsigned char **out,
@@ -1022,7 +1046,7 @@ index b3f8f4795..00dd9c61a 100644
          srv = (unsigned char *) NGX_HTTP_NPN_ADVERTISE;
          srvlen = sizeof(NGX_HTTP_NPN_ADVERTISE) - 1;
 diff --git a/src/http/ngx_http.c b/src/http/ngx_http.c
-index 79ef9c644..a29bff836 100644
+index 79ef9c64..a29bff83 100644
 --- a/src/http/ngx_http.c
 +++ b/src/http/ngx_http.c
 @@ -1141,6 +1141,7 @@ ngx_int_t
@@ -1133,7 +1157,7 @@ index 79ef9c644..a29bff836 100644
          if (addr[i].hash.buckets == NULL
              && (addr[i].wc_head == NULL
 diff --git a/src/http/ngx_http.h b/src/http/ngx_http.h
-index 8b43857ee..444f93536 100644
+index 8b43857e..444f9353 100644
 --- a/src/http/ngx_http.h
 +++ b/src/http/ngx_http.h
 @@ -20,6 +20,7 @@ typedef struct ngx_http_file_cache_s  ngx_http_file_cache_t;
@@ -1155,10 +1179,10 @@ index 8b43857ee..444f93536 100644
  #include <ngx_http_cache.h>
  #endif
 diff --git a/src/http/ngx_http_core_module.c b/src/http/ngx_http_core_module.c
-index cb49ef74a..1e991c0b3 100644
+index 3671558d..fb51a044 100644
 --- a/src/http/ngx_http_core_module.c
 +++ b/src/http/ngx_http_core_module.c
-@@ -4099,6 +4099,13 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+@@ -4182,6 +4182,13 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
              continue;
          }
  
@@ -1173,7 +1197,7 @@ index cb49ef74a..1e991c0b3 100644
                             "invalid parameter \"%V\"", &value[n]);
          return NGX_CONF_ERROR;
 diff --git a/src/http/ngx_http_core_module.h b/src/http/ngx_http_core_module.h
-index 85f6d66dc..fa08e3631 100644
+index 2aadae7f..7ffb9044 100644
 --- a/src/http/ngx_http_core_module.h
 +++ b/src/http/ngx_http_core_module.h
 @@ -82,6 +82,7 @@ typedef struct {
@@ -1201,7 +1225,7 @@ index 85f6d66dc..fa08e3631 100644
  
  
 diff --git a/src/http/ngx_http_request.c b/src/http/ngx_http_request.c
-index 80c19656f..313e5a88a 100644
+index eb53996b..9493dbad 100644
 --- a/src/http/ngx_http_request.c
 +++ b/src/http/ngx_http_request.c
 @@ -64,6 +64,10 @@ static void ngx_http_ssl_handshake(ngx_event_t *rev);
@@ -1352,7 +1376,7 @@ index 80c19656f..313e5a88a 100644
  
  static void
  ngx_http_process_request_line(ngx_event_t *rev)
-@@ -2687,6 +2784,13 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
+@@ -2680,6 +2777,13 @@ ngx_http_finalize_connection(ngx_http_request_t *r)
      }
  #endif
  
@@ -1366,7 +1390,7 @@ index 80c19656f..313e5a88a 100644
      clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
  
      if (r->main->count != 1) {
-@@ -2896,6 +3000,19 @@ ngx_http_test_reading(ngx_http_request_t *r)
+@@ -2889,6 +2993,19 @@ ngx_http_test_reading(ngx_http_request_t *r)
  
  #endif
  
@@ -1386,7 +1410,7 @@ index 80c19656f..313e5a88a 100644
  #if (NGX_HAVE_KQUEUE)
  
      if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
-@@ -3563,7 +3680,15 @@ ngx_http_close_request(ngx_http_request_t *r, ngx_int_t rc)
+@@ -3556,7 +3673,15 @@ ngx_http_close_request(ngx_http_request_t *r, ngx_int_t rc)
      }
  #endif
  
@@ -1402,7 +1426,7 @@ index 80c19656f..313e5a88a 100644
      ngx_http_close_connection(c);
  }
  
-@@ -3684,6 +3809,21 @@ ngx_http_close_connection(ngx_connection_t *c)
+@@ -3677,6 +3802,21 @@ ngx_http_close_connection(ngx_connection_t *c)
      ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                     "close http connection: %d", c->fd);
  
@@ -1425,7 +1449,7 @@ index 80c19656f..313e5a88a 100644
  
      if (c->ssl) {
 diff --git a/src/http/ngx_http_request.h b/src/http/ngx_http_request.h
-index fce70efe6..8ac19658c 100644
+index 70c2d424..e44daa06 100644
 --- a/src/http/ngx_http_request.h
 +++ b/src/http/ngx_http_request.h
 @@ -24,6 +24,7 @@
@@ -1453,7 +1477,7 @@ index fce70efe6..8ac19658c 100644
      ngx_http_log_handler_pt           log_handler;
  
 diff --git a/src/http/ngx_http_request_body.c b/src/http/ngx_http_request_body.c
-index c4f092e59..2f8514418 100644
+index c4f092e5..2f851441 100644
 --- a/src/http/ngx_http_request_body.c
 +++ b/src/http/ngx_http_request_body.c
 @@ -85,6 +85,13 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
@@ -1514,7 +1538,7 @@ index c4f092e59..2f8514418 100644
         )
      {
 diff --git a/src/http/ngx_http_upstream.c b/src/http/ngx_http_upstream.c
-index a7391d09a..398af2797 100644
+index 89e1319f..05213392 100644
 --- a/src/http/ngx_http_upstream.c
 +++ b/src/http/ngx_http_upstream.c
 @@ -526,6 +526,13 @@ ngx_http_upstream_init(ngx_http_request_t *r)
@@ -1531,7 +1555,7 @@ index a7391d09a..398af2797 100644
      if (c->read->timer_set) {
          ngx_del_timer(c->read);
      }
-@@ -1351,6 +1358,12 @@ ngx_http_upstream_check_broken_connection(ngx_http_request_t *r,
+@@ -1348,6 +1355,12 @@ ngx_http_upstream_check_broken_connection(ngx_http_request_t *r,
      }
  #endif
  
@@ -1546,7 +1570,7 @@ index a7391d09a..398af2797 100644
      if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
 diff --git a/src/http/v3/ngx_http_v3.c b/src/http/v3/ngx_http_v3.c
 new file mode 100644
-index 000000000..7e44e2f07
+index 00000000..7e44e2f0
 --- /dev/null
 +++ b/src/http/v3/ngx_http_v3.c
 @@ -0,0 +1,2206 @@
@@ -3758,7 +3782,7 @@ index 000000000..7e44e2f07
 +}
 diff --git a/src/http/v3/ngx_http_v3.h b/src/http/v3/ngx_http_v3.h
 new file mode 100644
-index 000000000..45a55b898
+index 00000000..45a55b89
 --- /dev/null
 +++ b/src/http/v3/ngx_http_v3.h
 @@ -0,0 +1,77 @@
@@ -3841,7 +3865,7 @@ index 000000000..45a55b898
 +#endif /* _NGX_HTTP_V3_H_INCLUDED_ */
 diff --git a/src/http/v3/ngx_http_v3_filter_module.c b/src/http/v3/ngx_http_v3_filter_module.c
 new file mode 100644
-index 000000000..5bbff8602
+index 00000000..5bbff860
 --- /dev/null
 +++ b/src/http/v3/ngx_http_v3_filter_module.c
 @@ -0,0 +1,68 @@
@@ -3915,7 +3939,7 @@ index 000000000..5bbff8602
 +}
 diff --git a/src/http/v3/ngx_http_v3_module.c b/src/http/v3/ngx_http_v3_module.c
 new file mode 100644
-index 000000000..30955c4cd
+index 00000000..30955c4c
 --- /dev/null
 +++ b/src/http/v3/ngx_http_v3_module.c
 @@ -0,0 +1,286 @@
@@ -4207,7 +4231,7 @@ index 000000000..30955c4cd
 +}
 diff --git a/src/http/v3/ngx_http_v3_module.h b/src/http/v3/ngx_http_v3_module.h
 new file mode 100644
-index 000000000..72e189def
+index 00000000..72e189de
 --- /dev/null
 +++ b/src/http/v3/ngx_http_v3_module.h
 @@ -0,0 +1,34 @@
@@ -4246,5 +4270,5 @@ index 000000000..72e189def
 +
 +#endif /* _NGX_HTTP_V3_MODULE_H_INCLUDED_ */
 -- 
-2.26.2
+2.25.1
 

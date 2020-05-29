@@ -13,7 +13,7 @@ index bd1bec8..12bb025 100644
 +
 +$QUICHE/target/$QUICHE_BUILD_TARGET/libquiche.a: \\
 +		$NGX_MAKEFILE
-+	cd $QUICHE && cargo build $QUICHE_BUILD_FLAGS
++	cd $QUICHE && export PKG_CONFIG_PATH=/usr/local/openresty/openssl/lib/pkgconfig && export LD_LIBRARY_PATH=/usr/local/openresty/openssl/lib &&  /home/ubuntu/.cargo/bin/cargo build $QUICHE_BUILD_FLAGS
 +
 +END
 +

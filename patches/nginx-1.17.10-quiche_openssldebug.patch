@@ -1,0 +1,27 @@
+diff --git a/auto/lib/quiche/make b/auto/lib/quiche/make
+index f0a5de56..294a2bd9 100644
+--- a/auto/lib/quiche/make
++++ b/auto/lib/quiche/make
+@@ -5,10 +5,12 @@
+ # Default is release build
+ QUICHE_BUILD_FLAGS="--release --no-default-features --features openssl"
+ QUICHE_BUILD_TARGET="release"
++OPENSSL_PATH="/usr/local/openresty/openssl/lib"
+ 
+ if [ $NGX_DEBUG = YES ]; then
+-    QUICHE_BUILD_FLAGS="--no-default-features"
++    QUICHE_BUILD_FLAGS="--no-default-features --features openssl"
+     QUICHE_BUILD_TARGET="debug"
++    OPENSSL_PATH="/usr/local/openresty-debug/openssl/lib"
+ fi
+ 
+ 
+@@ -18,7 +20,7 @@ if [ $OPENSSL = YES ]; then
+ 
+ $QUICHE/target/$QUICHE_BUILD_TARGET/libquiche.a: \\
+ 		$NGX_MAKEFILE
+-	cd $QUICHE && export PKG_CONFIG_PATH=/usr/local/openresty/openssl/lib/pkgconfig && export LD_LIBRARY_PATH=/usr/local/openresty/openssl/lib &&  /home/ubuntu/.cargo/bin/cargo build $QUICHE_BUILD_FLAGS
++	cd $QUICHE && export PKG_CONFIG_PATH=$OPENSSL_PATH/pkgconfig && export LD_LIBRARY_PATH=$OPENSSL_PATH &&  /home/ubuntu/.cargo/bin/cargo build $QUICHE_BUILD_FLAGS
+ 
+ END
+ 

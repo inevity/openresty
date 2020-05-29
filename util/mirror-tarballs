@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -x
 
 #root=$(readlink -f -- "$(dirname -- "$0")/..")
 root=`perl -MCwd -e'print Cwd::abs_path(shift)' $(dirname -- "$0")/..`
@@ -484,8 +485,17 @@ echo
 echo "$info_txt applying the quiche as quic and http3 patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-quiche.patch || exit 1
 echo
-echo "$info_txt applying the quiche ssh header depend patch for nginx"
+
+echo "$info_txt applying the quich patch: remove openssl fix for nginx"
+patch -p1 < $root/patches/nginx-$main_ver-quiche-remove_opennssl_make_fix.patch || exit 1
+echo
+
+echo "$info_txt applying the quiche openssl header dep depend patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-quiche_sshheader.patch || exit 1
+echo
+
+echo "$info_txt applying the quiche openssl-debug dep   depend patch for nginx"
+patch -p1 < $root/patches/nginx-$main_ver-quiche_openssldebug.patch || exit 1
 echo
 
 
@@ -878,6 +888,14 @@ cd lua-resty-shell-$ver || exit 1
 sed 's/\$(DESTDIR)\//$(DESTDIR)/g' Makefile > mk || exit 1
 mv mk Makefile || exit 1
 cd ..
+
+#################################
+git clone https://github.com/cloudflare/quiche
+cd quiche || exit 1
+echo "$info_txt applying the openssl comp patch for quiche"
+patch -p1 < $root/patches/0001-tls-add-feature-to-build-against-OpenSSL.patch || exit 1
+echo
+cd .. 
 
 #################################
 
