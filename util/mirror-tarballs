@@ -498,6 +498,13 @@ echo "$info_txt applying the quiche openssl-debug dep   depend patch for nginx"
 patch -p1 < $root/patches/nginx-$main_ver-quiche_openssldebug.patch || exit 1
 echo
 
+echo "$info_txt applying the quiche 0rtt enable    depend patch for nginx"
+patch -p1 < $root/patches/nginx-$main_ver-quiche_enable_0rtt.patch || exit 1
+echo
+
+echo "$info_txt applying the quiche 0rtt enable    depend patch for nginx"
+patch -p1 < $root/patches/nginx-$main_ver-quiche_enable_qlog.patch || exit 1
+echo
 
 mkdir -p docs/html
 cp $root/html/index.html docs/html/ || exit 1
@@ -893,7 +900,10 @@ cd ..
 git clone https://github.com/cloudflare/quiche
 cd quiche || exit 1
 echo "$info_txt applying the openssl comp patch for quiche"
+echo "need add SSL_set_quic_early_data_context in openssl,so can use master"
+git checkout 9dd9eb3e6b89db300bb093c24b83d329068efff2
 patch -p1 < $root/patches/0001-tls-add-feature-to-build-against-OpenSSL.patch || exit 1
+patch -p1 < $root/patches/quicheprint.patch || exit 1
 echo
 cd .. 
 

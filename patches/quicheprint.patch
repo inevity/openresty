@@ -1,0 +1,20 @@
+diff --git a/src/tls.rs b/src/tls.rs
+index 6d01213..9c70aca 100644
+--- a/src/tls.rs
++++ b/src/tls.rs
+@@ -1131,6 +1131,7 @@ unsafe fn OPENSSL_free(ptr: *mut c_void) {
+ #[cfg(feature = "openssl")]
+ #[allow(non_snake_case)]
+ unsafe fn SSL_CTX_set_early_data_enabled(ctx: *mut SSL_CTX, enabled: i32) {
++    trace!("call set early data");
+     if enabled == 0 {
+         return;
+     }
+@@ -1140,6 +1141,7 @@ unsafe fn SSL_CTX_set_early_data_enabled(ctx: *mut SSL_CTX, enabled: i32) {
+ #[cfg(feature = "openssl")]
+ #[allow(non_snake_case)]
+ unsafe fn SSL_in_early_data(ssl: *mut SSL) -> c_int {
++    trace!("check whether in early data");
+     // SSL_is_init_finished(c->ssl->connection)
+     // !SSL_is_init_finished(ssl.as_ptr())
+     !SSL_is_init_finished(ssl)

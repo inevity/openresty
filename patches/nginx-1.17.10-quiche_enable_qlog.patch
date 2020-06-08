@@ -1,0 +1,13 @@
+diff --git a/auto/lib/quiche/make b/auto/lib/quiche/make
+index 49c6162..51346f6 100644
+--- a/auto/lib/quiche/make
++++ b/auto/lib/quiche/make
+@@ -8,7 +8,7 @@ QUICHE_BUILD_TARGET="release"
+ OPENSSL_PATH="/usr/local/openresty/openssl/lib"
+ 
+ if [ $NGX_DEBUG = YES ]; then
+-    QUICHE_BUILD_FLAGS="--no-default-features --features openssl"
++    QUICHE_BUILD_FLAGS="--no-default-features --features openssl,qlog"
+     QUICHE_BUILD_TARGET="debug"
+     OPENSSL_PATH="/usr/local/openresty-debug/openssl/lib"
+ fi
